@@ -16,12 +16,16 @@ body {
 <script>
 
 var camera, scene, renderer;
-var geometry, material;
+var material;
+var spike_geometry, body_geometry, light_geometry;
+var spikes = new Array();
+var bodies = new Array();
+var lights = new Array();
 
 var startTime = Date.now();
 
 var init = function () {
-
+  document.body.style.background = "rgb(20,20,60)";
   renderer = new THREE.WebGLRenderer();
   renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild( renderer.domElement );
@@ -31,57 +35,59 @@ var init = function () {
   camera.lookAt(new THREE.Vector3(0,0,0));
 
   scene = new THREE.Scene();
-
   loader = new THREE.JSONLoader();
 
   var ambientLight = new THREE.AmbientLight( 0xDFC183 );
-  var light = new THREE.DirectionalLight( 0x444444, 0.3 );
-  light.position.set( 10, 0, 0 );
-  var light2 = new THREE.DirectionalLight( 0xFF0000, 1.0 );
-  light2.position.set( -500, 250, -200 );
+  var light = new THREE.DirectionalLight( 0x111111, 0.1 );
+  light.position.set( 40, 40, 0 );
   scene.add(ambientLight);
   scene.add(light);
-  //scene.add(light2);
 
-  geometry = new THREE.CubeGeometry( 250, 250, 250 );
-  //material = new THREE.MeshBasicMaterial( { color: 0x34ad34, wireframe: false, wireframeLinewidth: 4 } );
-  material = new THREE.MeshLambertMaterial( { color: 0x003399, specular: 0x003399, shininess: 20 } );
+  material = new THREE.MeshLambertMaterial( { color: 0xFF0000, specular: 0x003399, shininess: 20 } );
 
-  cube = new THREE.Mesh( geometry, material );
   loader.load('party-bot-spike.js', function (geometry, materials) {
-      mesh = new THREE.Mesh(
-        geometry,
-        material
-        );
-      mesh.receiveShadow = true;
-      mesh.castShadow = true;
-      scene.add(mesh);
+    spike_geometry = geometry;
+    for(var i=0;i<8;i++) {
+      spikes[i] = new THREE.Mesh(
+      spike_geometry,
+      material
+      );
+      spikes[i].receiveShadow = true;
+      spikes[i].castShadow = true;
+      spikes[i].rotation.y = Math.PI/4*i;
+      scene.add(spikes[i]);
+    }
   });
-
+  loader.load('party-bot-body.js', function (geometry, materials) {
+    body_geometry = geometry;
+  });
+  loader.load('party-bot-light.js', function (geometry, materials) {
+    light_geometry = geometry;
+  });
+/*
+  spike00 = new THREE.Mesh(
+    spike_geometry,
+    material
+  );
+  spike00.receiveShadow = true;
+  spike00.castShadow = true;
+  scene.add(spike00);*/
+  animate();
 };
 
 var animate = function () {
   this.t = Date.now() - this.startTime;
-  console.log(this.t);
 
   requestAnimationFrame( animate );
 
-  var r = parseInt(35 + 50* Math.sin(0.0012*t));
-  var g = parseInt(135 + 100 * Math.sin(0.001*t));
-  var b = parseInt(35 + 50 * Math.cos(0.0011*t));
+  if(spikes.length>=8) for(var i=0;i<8;i++)spikes[i].rotation.x = this.t/1000;
+  if(t<200)console.log(spikes);
 
-  cube.rotation.y = this.t/1000;
-  mesh.rotation.y = this.t/1000;
-
-  cube.material.color.setRGB(250,0,250);
-
-  //        document.body.style.background = "rgb(" + r + "," + g + "," + b + ")";
 
   renderer.render( scene, camera );
 };
 
 init();
-animate();
 
 </script>
 </body>
