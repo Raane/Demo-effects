@@ -21,6 +21,7 @@ var spike_geometry, body_geometry, light_geometry;
 var spikes = new Array();
 var bodies = new Array();
 var lights = new Array();
+var party_cube = new THREE.Object3D();;
 
 var startTime = Date.now();
 
@@ -47,15 +48,16 @@ var init = function () {
 
   loader.load('party-bot-spike.js', function (geometry, materials) {
     spike_geometry = geometry;
-    for(var i=0;i<8;i++) {
+    for(var i=0;i<6;i++) {
       spikes[i] = new THREE.Mesh(
       spike_geometry,
       material
       );
       spikes[i].receiveShadow = true;
       spikes[i].castShadow = true;
-      spikes[i].rotation.y = Math.PI/4*i;
-      scene.add(spikes[i]);
+      if(i<4)  spikes[i].rotation.y = Math.PI/2*i;
+      if(i>=4) spikes[i].rotation.x = Math.PI/2*((i-4)*2+1);
+      party_cube.add(spikes[i]);
     }
   });
   loader.load('party-bot-body.js', function (geometry, materials) {
@@ -73,6 +75,8 @@ var init = function () {
   spike00.castShadow = true;
   scene.add(spike00);*/
   animate();
+
+  scene.add(party_cube);
 };
 
 var animate = function () {
@@ -80,7 +84,8 @@ var animate = function () {
 
   requestAnimationFrame( animate );
 
-  if(spikes.length>=8) for(var i=0;i<8;i++)spikes[i].rotation.x = this.t/1000;
+  party_cube.rotation.x = Math.sin(t/1000);
+  party_cube.rotation.y = Math.sin(t/1400);
   if(t<200)console.log(spikes);
 
 
