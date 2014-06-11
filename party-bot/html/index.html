@@ -28,44 +28,100 @@ var startTime = Date.now();
 var init = function () {
   document.body.style.background = "rgb(20,20,60)";
   renderer = new THREE.WebGLRenderer();
+  renderer.shadowMapEnabled = true;
+  renderer.shadowMapType = THREE.PCFShadowMap;
   renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild( renderer.domElement );
   camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 1000 );
-  camera.position.z = 15;
+  camera.position.z = 45;
   camera.position.y = 5;
   camera.lookAt(new THREE.Vector3(0,0,0));
 
   scene = new THREE.Scene();
   loader = new THREE.JSONLoader();
 
-  var ambientLight = new THREE.AmbientLight( 0xDFC183 );
-  var light = new THREE.DirectionalLight( 0x111111, 0.1 );
-  light.position.set( 40, 40, 0 );
-  scene.add(ambientLight);
+  var ambientLight = new THREE.AmbientLight( 0x0FC183 );
+  var light2 = new THREE.DirectionalLight( 0xFFFF99, 1.8 );
+  light2.castShadow = true;
+  light2.position.set( 2, 10, 0 );
+  //scene.add(ambientLight);
+  //scene.add(light2);
+
+
+  light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
+  light.position.set( 0, 15, 0 );
+  light.target.position.set( 0, -10, 0 );
+
+  light.castShadow = true;
+
+  light.shadowCameraNear = 1;
+  light.shadowCameraFar = 2500;
+  light.shadowCameraFov = 50;
+
+  light.shadowCameraVisible = true;
+
+  light.shadowBias = 0.0001;
+  light.shadowDarkness = 0.5;
+
+  light.shadowMapWidth = 2048;
+  light.shadowMapHeight = 1024;
+
   scene.add(light);
 
-  material = new THREE.MeshLambertMaterial( { color: 0xFF0000, specular: 0x003399, shininess: 20 } );
+  spike_material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+  body_material = new THREE.MeshLambertMaterial( { color: 0x666666 } );
+  light_material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+  //material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
 
   loader.load('party-bot-spike.js', function (geometry, materials) {
-    spike_geometry = geometry;
     for(var i=0;i<6;i++) {
       spikes[i] = new THREE.Mesh(
-      spike_geometry,
-      material
+        geometry,
+        spike_material
       );
       spikes[i].receiveShadow = true;
       spikes[i].castShadow = true;
       if(i<4)  spikes[i].rotation.y = Math.PI/2*i;
       if(i>=4) spikes[i].rotation.x = Math.PI/2*((i-4)*2+1);
+//      spikes[i].position.set(-1+2*(i%2),-1+2*(Math.floor(i/2)%2),-1+2*(Math.floor(i/4)%2));
+//      spikes[i].position.set(1,1,1);
       party_cube.add(spikes[i]);
     }
   });
   loader.load('party-bot-body.js', function (geometry, materials) {
-    body_geometry = geometry;
+    for(var i=0;i<8;i++) {
+      bodies[i] = new THREE.Mesh(
+        geometry,
+        body_material
+      );
+      bodies[i].receiveShadow = true;
+      bodies[i].castShadow = true;
+      if(i>=6)bodies[i].rotation.x = Math.PI/2;
+      if(i>=4&&i<6)bodies[i].rotation.x = -Math.PI/2;
+      bodies[i].rotation.y = Math.PI/2*i;
+      party_cube.add(bodies[i]);
+    }
   });
   loader.load('party-bot-light.js', function (geometry, materials) {
     light_geometry = geometry;
   });
+
+ /* light_colors = [0xFF0000,0x00FF00,0x0000FF,0x00FFFF,0xFF00FF,0xFFFF00,0xFFFFFF,0x666666,]
+  for(var i=0;i<8;i++) {
+    pointlight = new THREE.PointLight( light_colors[i], 1, 1000 );
+    pointlight.position.set(-1+2*(i%2),-1+2*(Math.floor(i/2)%2),-1+2*(Math.floor(i/4)%2));
+    pointlight.position.x *= 1;
+    pointlight.position.y *= 1;
+    pointlight.position.z *= 1;
+    pointlight.castShadow = true;
+    party_cube.add(pointlight);
+  }*/
+
+  var cube = new THREE.Mesh(new THREE.CubeGeometry(60, 2, 60), body_material);
+  cube.receiveShadow = true;
+  cube.position.set(0,-8,0)
+  scene.add(cube);
+
 /*
   spike00 = new THREE.Mesh(
     spike_geometry,
@@ -74,7 +130,6 @@ var init = function () {
   spike00.receiveShadow = true;
   spike00.castShadow = true;
   scene.add(spike00);*/
-  animate();
 
   scene.add(party_cube);
 };
@@ -93,6 +148,7 @@ var animate = function () {
 };
 
 init();
+animate();
 
 </script>
 </body>
