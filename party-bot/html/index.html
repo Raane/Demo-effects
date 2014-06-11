@@ -21,6 +21,20 @@ var spike_geometry, body_geometry, light_geometry;
 var spikes = new Array();
 var bodies = new Array();
 var lights = new Array();
+
+var spike_expand_start = 2000;
+var spike_expand_duration = 1500;
+var spike_spin_start = 4000;
+var spike_spin_duration = 2500;
+var spike_retract_start = 6500;
+var spike_retract_duration = 1500;
+var body_expand_start = 8000;
+var body_expand_duration = 1500;
+var body_spin_start = 10000;
+var body_spin_duration = 1500;
+var body_retract_start = 12000;
+var body_retract_duration = 1500;
+
 var party_cube = new THREE.Object3D();;
 
 var startTime = Date.now();
@@ -40,14 +54,13 @@ var init = function () {
   scene = new THREE.Scene();
   loader = new THREE.JSONLoader();
 
-  var ambientLight = new THREE.AmbientLight( 0x0FC183 );
+  var ambientLight = new THREE.AmbientLight( 0x111111 );
   var light2 = new THREE.DirectionalLight( 0xFFFF99, 1.8 );
   light2.castShadow = true;
   light2.position.set( 2, 10, 0 );
-  //scene.add(ambientLight);
+  scene.add(ambientLight);
   //scene.add(light2);
 
-/*
   light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
   light.position.set( 0, 15, 0 );
   light.target.position.set( 0, -10, 0 );
@@ -58,7 +71,7 @@ var init = function () {
   light.shadowCameraFar = 2500;
   light.shadowCameraFov = 50;
 
-  light.shadowCameraVisible = true;
+  light.shadowCameraVisible = false;
 
   light.shadowBias = 0.0001;
   light.shadowDarkness = 0.5;
@@ -67,11 +80,10 @@ var init = function () {
   light.shadowMapHeight = 1024;
 
   scene.add(light);
-  */
 
-  spike_material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
-  body_material = new THREE.MeshLambertMaterial( { color: 0x666666 } );
-  light_material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
+  spike_material = new THREE.MeshPhongMaterial( { color: 0xFF0000 } );
+  body_material = new THREE.MeshPhongMaterial( { color: 0x666666 } );
+  light_material = new THREE.MeshPhongMaterial( { color: 0xFF0000 } );
   //material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
 
   loader.load('party-bot-spike.js', function (geometry, materials) {
@@ -114,14 +126,7 @@ var init = function () {
   });
 
   light_colors = [0xFF0000,0x00FF00,0x0000FF,0x00FFFF,0xFF00FF,0xFFFF00,0xFFFFFF,0x666666,]
-  for(var i=0;i<8;i++) {
-    /*pointlight = new THREE.PointLight( light_colors[i], 1, 1000 );
-    pointlight.position.set(-1+2*(i%2),-1+2*(Math.floor(i/2)%2),-1+2*(Math.floor(i/4)%2));
-    pointlight.position.x *= 1;
-    pointlight.position.y *= 1;
-    pointlight.position.z *= 1;
-    pointlight.castShadow = true;
-    party_cube.add(pointlight);*/
+/*  for(var i=0;i<8;i++) {
     party_cube.add(createSpot(
         -1+2*(i%2),
         -1+2*(Math.floor(i/2)%2),
@@ -130,7 +135,7 @@ var init = function () {
         -2+4*(Math.floor(i/2)%2),
         -2+4*(Math.floor(i/4)%2)
     ));
-  }
+  }*/
 
   var plane = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), body_material);
   plane.rotation.x = -Math.PI/2;
@@ -165,7 +170,7 @@ var createSpot = function(px,py,pz,tx,ty,tz){
   new_light.shadowCameraFar = 2500;
   new_light.shadowCameraFov = 1;
 
-  new_light.shadowCameraVisible = true;
+//  new_light.shadowCameraVisible = true;
 
   new_light.shadowBias = 0.0001;
   new_light.shadowDarkness = 0.5;
@@ -180,15 +185,65 @@ var animate = function () {
 
   requestAnimationFrame( animate );
 
-  //party_cube.rotation.x = Math.sin(t/1000);
-  //party_cube.rotation.y = Math.sin(t/1400);
+  party_cube.rotation.x = Math.sin(t/1000);
+  party_cube.rotation.y = Math.sin(t/1400);
 
-  camera.position.x = 15*Math.sin(t/1000);
-  camera.position.z = 15*Math.cos(t/1000);
+  camera.position.x = 25*Math.sin(t/1000);
+  camera.position.z = 25*Math.cos(t/1000);
   camera.lookAt(new THREE.Vector3(0,-5,0));
 
   if(t<200)console.log(spikes);
 
+  if(t>=spike_expand_start && t<spike_expand_start + spike_expand_duration) {
+    var distance = (t-spike_expand_start)/600;
+    spikes[0].position.z = distance;
+    spikes[1].position.x = distance;
+    spikes[2].position.z = -distance;
+    spikes[3].position.x = -distance;
+    spikes[4].position.y = -distance;
+    spikes[5].position.y = distance;
+  }
+  if(t>=spike_spin_start && t<spike_spin_start + spike_spin_duration) {
+    var angle = Math.PI*(-Math.cos(Math.PI*(t-spike_spin_start)/spike_spin_duration)+1);
+    spikes[0].rotation.z = angle;
+    spikes[1].rotation.x = angle;
+    spikes[2].rotation.z = angle;
+    spikes[3].rotation.x = angle;
+    spikes[4].rotation.z = angle;
+    spikes[5].rotation.z = angle;
+  }
+  if(t>=spike_retract_start && t<spike_retract_start + spike_retract_duration) {
+    var distance = (spike_retract_duration/600)-(t-spike_retract_start)/600;
+    spikes[0].position.z = distance;
+    spikes[1].position.x = distance;
+    spikes[2].position.z = -distance;
+    spikes[3].position.x = -distance;
+    spikes[4].position.y = -distance;
+    spikes[5].position.y = distance;
+  }
+
+  if(t>=body_expand_start && t<body_expand_start + body_expand_duration) {
+    var d = (t-body_expand_start)/1500;
+    bodies[0].position.set(-d,-d,d);
+    bodies[1].position.set(d,-d,d);
+    bodies[2].position.set(d,-d,-d);
+    bodies[3].position.set(-d,-d,-d);
+    bodies[4].position.set(-d,d,d);
+    bodies[5].position.set(d,d,d);
+    bodies[6].position.set(d,d,-d);
+    bodies[7].position.set(-d,d,-d);
+  }
+  if(t>=body_retract_start && t<body_retract_start + body_retract_duration) {
+    var d = (body_retract_duration/1500)-(t-body_retract_start)/1500;
+    bodies[0].position.set(-d,-d,d);
+    bodies[1].position.set(d,-d,d);
+    bodies[2].position.set(d,-d,-d);
+    bodies[3].position.set(-d,-d,-d);
+    bodies[4].position.set(-d,d,d);
+    bodies[5].position.set(d,d,d);
+    bodies[6].position.set(d,d,-d);
+    bodies[7].position.set(-d,d,-d);
+  }
 
   renderer.render( scene, camera );
 };
