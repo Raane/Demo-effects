@@ -47,7 +47,7 @@ var init = function () {
   //scene.add(ambientLight);
   //scene.add(light2);
 
-
+/*
   light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
   light.position.set( 0, 15, 0 );
   light.target.position.set( 0, -10, 0 );
@@ -67,6 +67,7 @@ var init = function () {
   light.shadowMapHeight = 1024;
 
   scene.add(light);
+  */
 
   spike_material = new THREE.MeshLambertMaterial( { color: 0xFF0000 } );
   body_material = new THREE.MeshLambertMaterial( { color: 0x666666 } );
@@ -99,6 +100,12 @@ var init = function () {
       if(i>=6)bodies[i].rotation.x = Math.PI/2;
       if(i>=4&&i<6)bodies[i].rotation.x = -Math.PI/2;
       bodies[i].rotation.y = Math.PI/2*i;
+      /*bodies[i].add(createSpot(
+        2,2,2,
+        -8+16*(i%2),
+        -8+16*(Math.floor(i/2)%2),
+        -8+16*(Math.floor(i/4)%2)
+        ));*/
       party_cube.add(bodies[i]);
     }
   });
@@ -106,18 +113,31 @@ var init = function () {
     light_geometry = geometry;
   });
 
- /* light_colors = [0xFF0000,0x00FF00,0x0000FF,0x00FFFF,0xFF00FF,0xFFFF00,0xFFFFFF,0x666666,]
+  light_colors = [0xFF0000,0x00FF00,0x0000FF,0x00FFFF,0xFF00FF,0xFFFF00,0xFFFFFF,0x666666,]
   for(var i=0;i<8;i++) {
-    pointlight = new THREE.PointLight( light_colors[i], 1, 1000 );
+    /*pointlight = new THREE.PointLight( light_colors[i], 1, 1000 );
     pointlight.position.set(-1+2*(i%2),-1+2*(Math.floor(i/2)%2),-1+2*(Math.floor(i/4)%2));
     pointlight.position.x *= 1;
     pointlight.position.y *= 1;
     pointlight.position.z *= 1;
     pointlight.castShadow = true;
-    party_cube.add(pointlight);
-  }*/
+    party_cube.add(pointlight);*/
+    party_cube.add(createSpot(
+        -1+2*(i%2),
+        -1+2*(Math.floor(i/2)%2),
+        -1+2*(Math.floor(i/4)%2),
+        -2+4*(i%2),
+        -2+4*(Math.floor(i/2)%2),
+        -2+4*(Math.floor(i/4)%2)
+    ));
+  }
 
-  var cube = new THREE.Mesh(new THREE.CubeGeometry(60, 2, 60), body_material);
+  var plane = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), body_material);
+  plane.rotation.x = -Math.PI/2;
+  plane.receiveShadow = true;
+  plane.position.set(0,-8,0)
+  scene.add(plane);
+  var cube = new THREE.Mesh(new THREE.CubeGeometry(6, 2.4, 6), body_material);
   cube.receiveShadow = true;
   cube.position.set(0,-8,0)
   scene.add(cube);
@@ -134,13 +154,39 @@ var init = function () {
   scene.add(party_cube);
 };
 
+var createSpot = function(px,py,pz,tx,ty,tz){
+  new_light = new THREE.SpotLight( 0xffffff, 1, 0, Math.PI / 2, 1 );
+  new_light.position.set( px, py, pz );
+  new_light.target.position.set( tx, ty, tz );
+
+  new_light.castShadow = true;
+
+  new_light.shadowCameraNear = .01;
+  new_light.shadowCameraFar = 2500;
+  new_light.shadowCameraFov = 1;
+
+  new_light.shadowCameraVisible = true;
+
+  new_light.shadowBias = 0.0001;
+  new_light.shadowDarkness = 0.5;
+
+  new_light.shadowMapWidth = 2048;
+  new_light.shadowMapHeight = 1024;
+  return new_light;
+};
+
 var animate = function () {
   this.t = Date.now() - this.startTime;
 
   requestAnimationFrame( animate );
 
-  party_cube.rotation.x = Math.sin(t/1000);
-  party_cube.rotation.y = Math.sin(t/1400);
+  //party_cube.rotation.x = Math.sin(t/1000);
+  //party_cube.rotation.y = Math.sin(t/1400);
+
+  camera.position.x = 15*Math.sin(t/1000);
+  camera.position.z = 15*Math.cos(t/1000);
+  camera.lookAt(new THREE.Vector3(0,-5,0));
+
   if(t<200)console.log(spikes);
 
 
