@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 <head>
@@ -15,12 +14,19 @@ body {
 <script src="lib/three.min.js"></script>
 <script>
 
+intersects = new Array();;
+
 var camera, scene, renderer;
 var material;
 var spike_geometry, body_geometry, light_geometry;
 var spikes = new Array();
 var bodies = new Array();
+var rays = new Array();
 var lights = new Array();
+
+var lazer_hits = new Array();
+
+var objects = [];
 
 var spike_expand_start = 2000;
 var spike_expand_duration = 1500;
@@ -41,7 +47,7 @@ var startTime = Date.now();
 
 var init = function () {
   document.body.style.background = "rgb(20,20,60)";
-  renderer = new THREE.WebGLRenderer();
+  renderer = new THREE.WebGLRenderer( { antialiasing: true } );
   renderer.shadowMapEnabled = true;
   renderer.shadowMapType = THREE.PCFShadowMap;
   renderer.setSize( window.innerWidth, window.innerHeight );
@@ -53,6 +59,11 @@ var init = function () {
 
   scene = new THREE.Scene();
   loader = new THREE.JSONLoader();
+
+  for(var i=0;i<8;i++) {
+    lazer_hits[i] = new THREE.PointLight( 0xff0000, 10, 1 );
+    scene.add( lazer_hits[i] );
+  }
 
   var ambientLight = new THREE.AmbientLight( 0x111111 );
   var light2 = new THREE.DirectionalLight( 0xFFFF99, 1.8 );
@@ -84,7 +95,6 @@ var init = function () {
   spike_material = new THREE.MeshPhongMaterial( { color: 0xFF0000 } );
   body_material = new THREE.MeshPhongMaterial( { color: 0x666666 } );
   light_material = new THREE.MeshPhongMaterial( { color: 0xFF0000 } );
-  //material = new THREE.MeshBasicMaterial( { color: 0xFF0000 } );
 
   loader.load('party-bot-spike.js', function (geometry, materials) {
     for(var i=0;i<6;i++) {
@@ -96,8 +106,6 @@ var init = function () {
       spikes[i].castShadow = true;
       if(i<4)  spikes[i].rotation.y = Math.PI/2*i;
       if(i>=4) spikes[i].rotation.x = Math.PI/2*((i-4)*2+1);
-//      spikes[i].position.set(-1+2*(i%2),-1+2*(Math.floor(i/2)%2),-1+2*(Math.floor(i/4)%2));
-//      spikes[i].position.set(1,1,1);
       party_cube.add(spikes[i]);
     }
   });
@@ -112,12 +120,6 @@ var init = function () {
       if(i>=6)bodies[i].rotation.x = Math.PI/2;
       if(i>=4&&i<6)bodies[i].rotation.x = -Math.PI/2;
       bodies[i].rotation.y = Math.PI/2*i;
-      /*bodies[i].add(createSpot(
-        2,2,2,
-        -8+16*(i%2),
-        -8+16*(Math.floor(i/2)%2),
-        -8+16*(Math.floor(i/4)%2)
-        ));*/
       party_cube.add(bodies[i]);
     }
   });
@@ -126,16 +128,6 @@ var init = function () {
   });
 
   light_colors = [0xFF0000,0x00FF00,0x0000FF,0x00FFFF,0xFF00FF,0xFFFF00,0xFFFFFF,0x666666,]
-/*  for(var i=0;i<8;i++) {
-    party_cube.add(createSpot(
-        -1+2*(i%2),
-        -1+2*(Math.floor(i/2)%2),
-        -1+2*(Math.floor(i/4)%2),
-        -2+4*(i%2),
-        -2+4*(Math.floor(i/2)%2),
-        -2+4*(Math.floor(i/4)%2)
-    ));
-  }*/
 
   var plane = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), body_material);
   plane.rotation.x = -Math.PI/2;
@@ -146,17 +138,28 @@ var init = function () {
   cube.receiveShadow = true;
   cube.position.set(0,-8,0)
   scene.add(cube);
-
-/*
-  spike00 = new THREE.Mesh(
-    spike_geometry,
-    material
-  );
-  spike00.receiveShadow = true;
-  spike00.castShadow = true;
-  scene.add(spike00);*/
-
   scene.add(party_cube);
+
+
+
+  var cube2 = new THREE.Mesh(new THREE.CubeGeometry(.4, .4, .4), body_material);
+  cube2.receiveShadow = true;
+  cube2.position.set(-2,-2,-2);
+//  scene.add(cube2);
+  var cube3 = new THREE.Mesh(new THREE.CubeGeometry(.4, .4, .4), body_material);
+  cube3.receiveShadow = true;
+  cube3.position.set(-2,-3,-2);
+//  scene.add(cube3);
+  
+
+
+
+  objects[0] = cube;
+  objects[1] = plane;
+
+  console.log(objects);
+
+
 };
 
 var createSpot = function(px,py,pz,tx,ty,tz){
@@ -185,14 +188,13 @@ var animate = function () {
 
   requestAnimationFrame( animate );
 
-  party_cube.rotation.x = Math.sin(t/1000);
-  party_cube.rotation.y = Math.sin(t/1400);
+  //party_cube.rotation.x = Math.sin(t/1000);
+  //party_cube.rotation.y = Math.sin(t/1400);
 
-  camera.position.x = 25*Math.sin(t/1000);
-  camera.position.z = 25*Math.cos(t/1000);
+  camera.position.x = 25*Math.sin(t/10000);
+  camera.position.z = 25*Math.cos(t/10000);
   camera.lookAt(new THREE.Vector3(0,-5,0));
 
-  if(t<200)console.log(spikes);
 
   if(t>=spike_expand_start && t<spike_expand_start + spike_expand_duration) {
     var distance = (t-spike_expand_start)/600;
@@ -245,7 +247,29 @@ var animate = function () {
     bodies[7].position.set(-d,d,-d);
   }
 
-  renderer.render( scene, camera );
+  //if(t<400) console.log((new THREE.Raycaster( new THREE.Vector3(-2,-2,-2), new THREE.Vector3(0,-1,0).normalize())).intersectObjects( scene.children ));
+  for(var i=0;i<8;i++) {
+    var pos = new THREE.Vector3(
+      -1+2*(i%2),
+      -1+2*(Math.floor(i/2)%2),
+      -1+2*(Math.floor(i/4)%2)
+    );
+    var tar = new THREE.Vector3(
+      -2+4*(i%2),
+      -2+4*(Math.floor(i/2)%2),
+      -2+4*(Math.floor(i/4)%2)
+    );
+    rays[i] = new THREE.Raycaster( pos, tar );
+    intersects = rays[i].intersectObjects( scene.children );
+    if(intersects.length != 0) {
+      lazer_hits[i].position = intersects[0].point;
+      //lazer_hits[0].position.x = (t/1000)%2;
+      lazer_hits[i].position.y += .4;
+    }
+
+    renderer.render( scene, camera );
+  }
+  //console.log("");
 };
 
 init();
